@@ -95,7 +95,7 @@ int main(int argc, char **argv)
     kinematics_status = my_fksolver.JntToCart(jnt_q,cartpos);
 
     if(kinematics_status >= 0)
-        cout <<"Forward Kinematics successful----" <<endl; //error in printing cartpos
+        cout <<"Forward Kinematics successful----" <<endl; //dont know how to print cartpos
     else
         cout <<"Forward Kinematics failed" <<endl;
 
