@@ -19,7 +19,7 @@ int main(void)
    mj_activate("/home/student/Downloads/mjkey.txt");
 
    // load model from file and check for errors
-   m = mj_loadXML("/home/student/mjpro140/model/obj.xml", NULL, error, 1000);
+   m = mj_loadXML("/home/student/mjpro140/model/ur5/ur5.xml", NULL, error, 1000);
 
    if( !m )
    {
@@ -47,16 +47,16 @@ int main(void)
    // int=int; float=float; mjNum=double; mjtByte=unsigned char
 
 
+   cout << m->nnames<<endl;
    int color_size = 4;
-   for (int body_id = 0; body_id < m->nbody; body_id++)
+   for (int mat_id = 0; mat_id < m->nmat; mat_id++)
    {
-       cout <<"Body_"<<body_id<<" rgba: ";
+       cout <<m->names[m->name_matadr[mat_id]]<<"'s rgba: ";
        for (int color_id = 0; color_id < color_size; color_id++)
-       cout<< m->geom_rgba[body_id*color_size + color_id] << " ";
+       cout<< m->mat_rgba[mat_id*color_size + color_id] << " ";
        cout<<endl;
    }
    cout<<endl;
-
 
 
    // make data corresponding to model
@@ -84,9 +84,10 @@ int main(void)
 
    // run simulation for 10 seconds
    int steps=0;
-   while( d->time<.5)
+   while( d->time<10)
    {
       mj_step(m, d);
+      /*
       cout <<endl<<"STEP:"<< steps <<endl<<"Force_Sensor: ";
       for (int j = 0; j < 3; j++)
       {
@@ -123,7 +124,7 @@ int main(void)
             cout<< d->cfrc_ext[i*6 + j] << "  ";
           }
           cout<<endl;
-      }
+      }*/
       steps++;
    }
 
@@ -169,5 +170,17 @@ for (int i = 0; i < 1; i++)
        }
        cout<<endl;
    }
+
+   int color_size = 4;
+   for (int body_id = 0; body_id < m->nbody; body_id++)
+   {
+       cout <<"Body_"<<body_id<<" rgba: ";
+       for (int color_id = 0; color_id < color_size; color_id++)
+       cout<< m->geom_rgba[body_id*color_size + color_id] << " ";
+       cout<<endl;
+   }
+   cout<<endl;
+
+
 
 */
