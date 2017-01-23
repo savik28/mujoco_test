@@ -16,7 +16,7 @@ int main(void)
    ofstream data_file ("data.txt");
    //data_file.open("data.txt");
 
-   mj_activate("/home/student/Downloads/mjkey.txt");
+   mj_activate("/home/student/mjpro140/bin/mjkey.txt");
 
    // load model from file and check for errors
    m = mj_loadXML("/home/student/mjpro140/model/ur5/ur5.xml", NULL, error, 1000);

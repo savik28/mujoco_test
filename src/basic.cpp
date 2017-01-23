@@ -108,7 +108,7 @@ int main(int argc, const char** argv)
     }
 
     // activate software
-    mj_activate("/home/student/Downloads/mjkey.txt");
+    mj_activate("/home/student/mjpro140/bin/mjkey.txt");
 
     // load and compile model
     char error[1000] = "Could not load binary model";
@@ -122,9 +122,9 @@ int main(int argc, const char** argv)
     // make data
     d = mj_makeData(m);
     double pos[8] = {0,-1.42,1.45,-3.14,1.46,0,-0.025,0.025};
-    for(int c=0; c < m->nu; c++)
+    for(int c=0; c < m->nv; c++)
        {
-         d->ctrl[c] = pos[c];
+         d->ctrl[c+8] = pos[c];
        }
 
     // init GLFW
@@ -162,7 +162,7 @@ int main(int argc, const char** argv)
         {
             mj_step(m, d);
             cout<<endl<<"Time:"<<d->time;
-            for (int z=0; z< m->nu; z++)
+            for (int z=0; z< m->nv; z++)
               cout<<"::"<< d->qpos[z];
         }
 

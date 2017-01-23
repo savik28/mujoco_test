@@ -16,7 +16,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "kdl_test");
 
     Tree my_tree;
-    if (!kdl_parser::treeFromFile("/home/student/ros_mujoco_ws/src/mujoco_test/urdf/ur5_with_gripper.urdf", my_tree))
+    if (!kdl_parser::treeFromFile("/home/student/ros_mujoco_ws/src/mujoco_test/urdf/ur5_with_gripper_no_sen.urdf", my_tree))
     {
          ROS_ERROR("Failed to construct kdl tree");
          return false;
@@ -26,17 +26,19 @@ int main(int argc, char **argv)
     unsigned int ts = my_tree.getNrOfSegments();
     std::map<std::string,KDL::TreeElement>::const_iterator root = my_tree.getRootSegment();
     //std::map<std::string,KDL::TreeElement>::const_iterator chain_tip = my_tree.getSegment("gripper_base_link");
-    //std::map<std::string,KDL::TreeElement>& segments = my_tree.getSegments();
+    std::map<std::basic_string<char>,KDL::TreeElement> segments = my_tree.getSegments();
     cout << endl << "A Tree is created with "<< ts << " segments and " << tj << " joints" << endl;
+    cout<<"ROOT of the TREE => " << root->first <<endl;
 
-        cout<<"ROOT of the TREE =>" << root->first <<endl;
 
-    bool chain_done;
-    Chain my_chain;
-    chain_done = my_tree.getChain("base_link","ee_link",my_chain);
-    //ex=my_tree.getChain("gripper_base_link","",left_chain);
-    //ey=my_tree.getChain("gripper_base_link","",right_chain);
-    //ez=my_chain.addChain (left_chain/right_chain);
+    bool chain_done,ex,ey;
+    Chain my_chain,left_chain,right_chain;
+    chain_done = my_tree.getChain("base_link","gripper_base_link",my_chain);
+    ex=my_tree.getChain("gripper_base_link","gripper_finger_left_link",left_chain);
+    ey=my_tree.getChain("gripper_base_link","gripper_finger_right_link",right_chain);
+
+    my_chain.addChain (left_chain);
+    my_chain.addChain (right_chain);
 
     unsigned int cj = my_chain.getNrOfJoints();
     unsigned int cs = my_chain.getNrOfSegments();

@@ -25,7 +25,7 @@ unsigned int mujoco_init()
 {
     char error[1000];
 
-    mj_activate("/home/student/Downloads/mjkey.txt");
+    mj_activate("/home/student/mjpro140/bin/mjkey.txt");
 
     //std::string file_content = read_file("obj.xml");
     //m = mj_loadXML(NULL, file_content, error, 1000);
@@ -42,42 +42,21 @@ unsigned int mujoco_init()
     d = mj_makeData(m);
 
     // setting the set points for Joint angles in radians
-    double set_point[8] = {0,-1.42,1.45,-3.14,-1.46,0,-0.025,0.025};
-    for(int c=0; c < m->nu; c++)
+    double start_pose[8]    = {0,0,0,0,0,0,0,0};//{0.1,-1,1,-2.5,-1,0,-0.05,0.05};{0,0,0,0,0,0,0,0}
+    double pos_set_point[8] = {-1.57,-1.45,1.45,-3.14,-1.46,0.8,-0.025,0.025};//{0.3,-1.45,1.45,-3.14,-1.46,0.9,-0.04,0.04};
+    double vel_set_point[8] = {0,0,0,0,0,0,0,0};
+    for(int c=0; c < m->nv; c++)
     {
-      d->ctrl[c] = set_point[c];
+        // first 8 in d->ctrl is used as motor actuator (online gravity compensation)
+        d->ctrl[c+8] = pos_set_point[c];  // next 8 in d->ctrl is used as position actuator
+        d->ctrl[c+16] = vel_set_point[c]; // next 8 in d->ctrl is used as velocity actuator
+        d->qpos[c] = start_pose[c];
     }
 
-    return sizeof(d);
+    return sizeof(*d);
 
 }
 
-unsigned int chain_creator()
-{
-
-    if (!kdl_parser::treeFromFile("/home/student/ros_mujoco_ws/src/mujoco_test/urdf/ur5_with_gripper.urdf", my_tree))
-    {
-         ROS_ERROR("Failed to construct kdl tree");
-         return 1;
-    }
-    unsigned int tj = my_tree.getNrOfJoints();
-    unsigned int ts = my_tree.getNrOfSegments();
-    cout << endl << "A Tree is created with "<< ts << " segments and " << tj << " joints" << endl;
-
-    bool chain_done;
-    chain_done = my_tree.getChain("base_link","ee_link",my_chain);
-
-    unsigned int cj = my_chain.getNrOfJoints();
-    unsigned int cs = my_chain.getNrOfSegments();
-
-    if(chain_done)
-        cout <<"A Chain is created with " << cs << " segments and " << cj << " joints" << endl;
-    else
-        cout <<"Chain Creation Failed" << endl;
-
-    return cj;
-
-}
 
 int main(int argc, char **argv)
 {
@@ -90,23 +69,15 @@ int main(int argc, char **argv)
     ros::Duration(0.1).sleep();
     //ros::Rate loop_rate(10);
 
-    unsigned int mi, cjn, gb;
+    unsigned int mi;
 
     mi = mujoco_init();  //load
 
     if ( mi==1 )
         cout<<"Error in Initialisation"<<endl;
     else
-       cout<<"Data Block of "<<mi <<"Bytes is reserved for Simulation" <<endl;
+       cout<<"Data Block of "<<mi <<" Bytes is reserved for Simulation" <<endl;
 
-
-    cjn = chain_creator(); // load
-
-    KDL::Vector my_gravity(0.0, 0.0,-9.81);
-    KDL::JntArray jnt_q(cjn),gravity_mat(cjn);    //jnt_qd(cjn),coriolis_mat(cjn);
-    //KDL::JntSpaceInertiaMatrix inertia_mat(cjn);
-
-    KDL::ChainDynParam forces_calc = KDL::ChainDynParam( my_chain, my_gravity );
 
     //setting up header joint state msgs
     sensor_msgs::JointState js_msg;
@@ -128,30 +99,17 @@ int main(int argc, char **argv)
     {
         while( d->time < 20 )
         {
-            for(int j=0; j < m->nu; j++)
+            for(int e=0; e<m->nv; e++)
             {
-                 jnt_q(j) = d->qpos[j];
+              d->ctrl[e] = d->qfrc_bias[e];
             }
-
-            gb = forces_calc.JntToGravity(jnt_q, gravity_mat); //gb=0 calculation is done
-
-            if (gb >= 0)
-            {
-                for (unsigned int k=0; k < cjn; k++)
-                {
-                    d->qfrc_applied[k] = gravity_mat(k);
-                }
-
-            }
-
 
             mj_step(m,d); //simulation
-
 
             ros::Time now = ros::Time::now();
 
             js_msg.header.stamp = now;
-            for(int i=0; i < m->nu; i++)
+            for(int i=0; i < m->nv; i++)
             {
                js_msg.position[i] = d->qpos[i];
                js_msg.velocity[i] = d->qvel[i];
@@ -166,9 +124,17 @@ int main(int argc, char **argv)
             //loop_rate.sleep();
         }
 
-        ROS_INFO("Simulation done");
         ROS_INFO("All Messages are Published");
+        ROS_INFO("Simulation done");
 
+        for (int z=0; z < m->nv; z++)
+        {
+            cout <<"Joint-"<< z << endl
+                 <<"Goal::Cu.State::Error => ";
+            cout << d->ctrl[z+8] <<"::"
+                 << d->qpos[z] <<"::"
+                 << (d->ctrl[z+8] - d->qpos[z])<< endl<< endl;
+        }
     }
 
     mj_deleteData(d);
@@ -178,40 +144,3 @@ int main(int argc, char **argv)
     return 0;
 }
 
-/*
-    ros::Publisher force_publisher = node_obj.advertise<geometry_msgs::WrenchStamped>("/force_sensor",100);
-    w_msg.header.stamp = now;
-    w_msg.header.frame_id = "sensor_body";
-    w_msg.wrench.force.x = d->sensordata[0];
-    w_msg.wrench.force.y = d->sensordata[1];
-    w_msg.wrench.force.z = d->sensordata[2];
-    force_publisher.publish(w_msg);
-*/
-/*
-    ros::Publisher tf_publisher = node_obj.advertise<tf2_msgs::TFMessage>("/tf",100);
-    geometry_msgs::TransformStamped ee_msg;
-    tf2_msgs::TFMessage tf_msg;
-    ee_msg.header.stamp = now;
-    ee_msg.header.frame_id = "r_gripper";
-    ee_msg.child_frame_id = "free";
-    ee_msg.transform.translation.x = d->xpos[39];
-    ee_msg.transform.translation.y = d->xpos[40];
-    ee_msg.transform.translation.z = d->xpos[41];
-    ee_msg.transform.rotation.x = d->xquat[52];
-    ee_msg.transform.rotation.y = d->xquat[53];
-    ee_msg.transform.rotation.z = d->xquat[54];
-    ee_msg.transform.rotation.w = d->xquat[55];
-
-    tf_msg.transforms.push_back(ee_msg);
-    tf_publisher.publish(tf_msg);
-*/
-/*
-    ros::Publisher rgba_publisher = node_obj.advertise<std_msgs::ColorRGBA>("/color",100);
-    std_msgs::ColorRGBA col;
-    col.r = m->mat_rgba[4];
-    col.g = m->mat_rgba[5];
-    col.b = m->mat_rgba[6];
-    col.a = m->mat_rgba[7];
-    ROS_INFO("%f, %f,%f,%f",col.r,col.g,col.b,col.a);
-    rgba_publisher.publish(col);
-*/
