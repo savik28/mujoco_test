@@ -1,25 +1,27 @@
+#include "ros/ros.h"
 #include "mujoco.h"
 #include "mjdata.h"
 #include "mjmodel.h"
 #include "iostream"
-#include "ros/ros.h"
+#include "fstream"
+#include "sensor_msgs/JointState.h"
 //#include "geometry_msgs/WrenchStamped.h"
 //#include "tf2_msgs/TFMessage.h"
 //#include "std_msgs/ColorRGBA.h"
-#include "sensor_msgs/JointState.h"
-#include <kdl_parser/kdl_parser.hpp>
-#include <kdl/chain.hpp>
-#include <kdl/jntarray.hpp>
-#include <kdl/chainfksolverpos_recursive.hpp>
-#include <kdl/chaindynparam.hpp>
+//#include <kdl_parser/kdl_parser.hpp>
+//#include <kdl/chain.hpp>
+//#include <kdl/jntarray.hpp>
+//#include <kdl/chainfksolverpos_recursive.hpp>
+//#include <kdl/chaindynparam.hpp>
 
 using namespace std;
 
 mjModel* m;
 mjData* d;
 
-KDL::Chain my_chain;
-KDL::Tree my_tree;
+ofstream simulation_data;
+
+int objects_in_scene = 1; //No. of Objects [with FREE JOINT not FIXED to the PLANE] in ur5.xml
 
 unsigned int mujoco_init()
 {
@@ -36,8 +38,30 @@ unsigned int mujoco_init()
     if( !m )
     {
        printf("%s\n", error);
+       simulation_data << error <<endl;
        return 1;
     }
+    else
+    {
+       /*simulation_data <<"Model loaded, parsed & converted sucessfully\n"
+                       <<endl<<"MODEL_PARAMETERS"<< endl
+                       <<"Gen.Coordinates :"<< m->nq <<endl
+                       <<"DOF's :"<< m->nv <<endl
+                       <<"Bodys :"<< m->nbody <<endl
+                       <<"Joints:"<< m->njnt <<endl
+                       <<"Ctrl.IP:"<< m->nu <<endl
+                       <<"No.of Free Objects:"<< objects_in_scene <<endl<<endl; */
+
+       cout<<endl<<"MODEL_PARAMETERS"<< endl
+                 <<"Gen.Coordinates :"<< m->nq <<endl
+                 <<"DOF's :"<< m->nv <<endl
+                 <<"Bodys :"<< m->nbody <<endl
+                 <<"Joints:"<< m->njnt <<endl
+                 <<"Ctrl.IP:"<< m->nu <<endl
+                 <<"No.of Free Objects:"<< objects_in_scene <<endl<<endl;
+
+     }
+
 
     d = mj_makeData(m);
 
@@ -45,12 +69,13 @@ unsigned int mujoco_init()
     double start_pose[8]    = {0,0,0,0,0,0,0,0};//{0.1,-1,1,-2.5,-1,0,-0.05,0.05};{0,0,0,0,0,0,0,0}
     double pos_set_point[8] = {-1.57,-1.45,1.45,-3.14,-1.46,0.8,-0.025,0.025};//{0.3,-1.45,1.45,-3.14,-1.46,0.9,-0.04,0.04};
     double vel_set_point[8] = {0,0,0,0,0,0,0,0};
-    for(int c=0; c < m->nv; c++)
+
+    for(int c=0; c < m->njnt-objects_in_scene; c++)
     {
         // first 8 in d->ctrl is used as motor actuator (online gravity compensation)
         d->ctrl[c+8] = pos_set_point[c];  // next 8 in d->ctrl is used as position actuator
         d->ctrl[c+16] = vel_set_point[c]; // next 8 in d->ctrl is used as velocity actuator
-        d->qpos[c] = start_pose[c];
+        d->qpos[c+(objects_in_scene*7)] = start_pose[c];
     }
 
     return sizeof(*d);
@@ -69,12 +94,18 @@ int main(int argc, char **argv)
     ros::Duration(0.1).sleep();
     //ros::Rate loop_rate(10);
 
-    unsigned int mi;
+    simulation_data.open("contact.txt");
+    if(simulation_data.is_open())
+        cout << "File is open";
+    else
+        cout<< "Unable to open a file";
+
+    unsigned int mi, steps = 0;
 
     mi = mujoco_init();  //load
 
-    if ( mi==1 )
-        cout<<"Error in Initialisation"<<endl;
+    if( mi==1 )
+       cout<<"Error in Initialisation"<<endl;
     else
        cout<<"Data Block of "<<mi <<" Bytes is reserved for Simulation" <<endl;
 
@@ -99,20 +130,30 @@ int main(int argc, char **argv)
     {
         while( d->time < 20 )
         {
-            for(int e=0; e<m->nv; e++)
+            for(int e=0; e< m->njnt-objects_in_scene; e++)
             {
-              d->ctrl[e] = d->qfrc_bias[e];
+              d->ctrl[e] = d->qfrc_bias[e+(objects_in_scene*6)];// 1 free joint adds 6 DOF's
             }
 
             mj_step(m,d); //simulation
 
+            steps++;
+            simulation_data <<endl <<"Step "<<steps <<": "<<endl;
+            for(int cf=0; cf< d->ncon; cf++)
+            {
+                //mj_contactForce(m, d, cf,con_force);
+                simulation_data <<"Contact "<<cf <<": "<<endl
+                                <<"    Contact between geoms "<<d->contact[cf].geom1<<" & "<<d->contact[cf].geom2<<endl;
+                                //<<"    Force: "<<*con_force<<endl<<endl;
+            }
+
             ros::Time now = ros::Time::now();
 
             js_msg.header.stamp = now;
-            for(int i=0; i < m->nv; i++)
+            for(int i=0; i < m->njnt-objects_in_scene; i++)
             {
-               js_msg.position[i] = d->qpos[i];
-               js_msg.velocity[i] = d->qvel[i];
+               js_msg.position[i] = d->qpos[i+(objects_in_scene*7)];
+               js_msg.velocity[i] = d->qvel[i+(objects_in_scene*6)];
             }
 
             //js_msg.effort = [];
@@ -127,18 +168,24 @@ int main(int argc, char **argv)
         ROS_INFO("All Messages are Published");
         ROS_INFO("Simulation done");
 
-        for (int z=0; z < m->nv; z++)
+        for (int z=0; z < m->njnt-objects_in_scene; z++)
         {
-            cout <<"Joint-"<< z << endl
+            simulation_data << endl<<"Joint-"<< z << endl
+                            <<"Goal::Cu.State::Error => ";
+            simulation_data << d->ctrl[z+8] <<"::"
+                            << d->qpos[z+(objects_in_scene*7)] <<"::" // 1 free joint adds 7 nq's
+                            << (d->ctrl[z+8] - d->qpos[z+(objects_in_scene*7)])<< endl;
+            cout << endl<<"Joint-"<< z << endl
                  <<"Goal::Cu.State::Error => ";
             cout << d->ctrl[z+8] <<"::"
-                 << d->qpos[z] <<"::"
-                 << (d->ctrl[z+8] - d->qpos[z])<< endl<< endl;
+                 << d->qpos[z+(objects_in_scene*7)] <<"::" // 1 free joint adds 7 nq's
+                 << (d->ctrl[z+8] - d->qpos[z+(objects_in_scene*7)])<< endl;
         }
     }
 
+    simulation_data.close();
     mj_deleteData(d);
-    mj_deleteModel(m);
+    mj_deleteModel(m);  
     mj_deactivate();
 
     return 0;
