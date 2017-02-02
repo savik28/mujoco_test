@@ -5,6 +5,7 @@
 #include "iostream"
 #include "fstream"
 #include "sensor_msgs/JointState.h"
+#include "visualization_msgs/Marker.h"
 //#include "geometry_msgs/WrenchStamped.h"
 //#include "tf2_msgs/TFMessage.h"
 //#include "std_msgs/ColorRGBA.h"
@@ -62,12 +63,11 @@ unsigned int mujoco_init()
 
      }
 
-
     d = mj_makeData(m);
 
     // setting the set points for Joint angles in radians
-    double start_pose[8]    = {0,0,0,0,0,0,0,0};//{0.1,-1,1,-2.5,-1,0,-0.05,0.05};{0,0,0,0,0,0,0,0}
-    double pos_set_point[8] = {-1.57,-1.45,1.45,-3.14,-1.46,0.8,-0.025,0.025};//{0.3,-1.45,1.45,-3.14,-1.46,0.9,-0.04,0.04};
+    double start_pose[8]    = {0.5,-0.1,0.2,-2.5,-1,0,-0.05,0.05};//{0.1,-1,1,-2.5,-1,0,-0.05,0.05};{0,0,0,0,0,0,0,0}
+    double pos_set_point[8] = {-1,-0.8,0.9,-3.14,-1.57,0.8,-0.025,0.025};//{0.3,-1.45,1.45,-3.14,-1.46,0.9,-0.04,0.04}{-1.57,-1.45,1.45,-3.14,-1.46,0.8,-0.025,0.025};
     double vel_set_point[8] = {0,0,0,0,0,0,0,0};
 
     for(int c=0; c < m->njnt-objects_in_scene; c++)
@@ -89,11 +89,6 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "demo");
     ros::NodeHandle node_obj;
 
-    ros::Publisher js_publisher = node_obj.advertise<sensor_msgs::JointState>("/joint_states",1000);
-
-    ros::Duration(0.1).sleep();
-    //ros::Rate loop_rate(10);
-
     simulation_data.open("contact.txt");
     if(simulation_data.is_open())
         cout << "File is open";
@@ -110,6 +105,8 @@ int main(int argc, char **argv)
        cout<<"Data Block of "<<mi <<" Bytes is reserved for Simulation" <<endl;
 
 
+    ros::Publisher js_publisher = node_obj.advertise<sensor_msgs::JointState>("/joint_states",1000);
+
     //setting up header joint state msgs
     sensor_msgs::JointState js_msg;
     js_msg.name.resize(8);
@@ -123,6 +120,30 @@ int main(int argc, char **argv)
     js_msg.name[5] = "wrist_3_joint";
     js_msg.name[6] = "gripper_base_left_finger_joint";
     js_msg.name[7] = "gripper_base_right_finger_joint";
+
+    ros::Publisher box_publisher = node_obj.advertise<visualization_msgs::Marker>("/visualization_marker", 1000);
+
+    visualization_msgs::Marker box;
+    box.header.frame_id = "/world";
+    box.ns = "free_objects";
+    box.type = visualization_msgs::Marker::CUBE;
+    box.action = visualization_msgs::Marker::ADD;
+    // id: world=0; if there are 2 objects in scene object1_id=1;object2_id=2;then robots's base_link id = 3
+    for(int i=1; i <= objects_in_scene; i++)
+    {
+      box.id = i; //geom_id/body_id
+      box.scale.x = m->geom_size[(i*3)+0]*2;//0.1;
+      box.scale.y = m->geom_size[(i*3)+1]*2;//0.1;
+      box.scale.z = m->geom_size[(i*3)+2]*2;//0.4;
+
+      box.color.r = m->geom_rgba[(i*3)+0];
+      box.color.g = m->geom_rgba[(i*3)+1];
+      box.color.b = m->geom_rgba[(i*3)+2];
+      box.color.a = m->geom_rgba[(i*3)+3]; // Don't forget to set the alpha!
+    }
+
+    ros::Duration(0.1).sleep();
+    //ros::Rate loop_rate(10);
 
 
   // while
@@ -155,10 +176,25 @@ int main(int argc, char **argv)
                js_msg.position[i] = d->qpos[i+(objects_in_scene*7)];
                js_msg.velocity[i] = d->qvel[i+(objects_in_scene*6)];
             }
-
             //js_msg.effort = [];
 
+            box.header.stamp = now;
+            for(int i=1; i <= objects_in_scene; i++)
+            {
+              box.pose.position.x = d->xpos[(i*3)+0];
+              box.pose.position.y = d->xpos[(i*3)+1];
+              box.pose.position.z = d->xpos[(i*3)+2];
+              box.pose.orientation.x = d->xquat[(i*3)+0];
+              box.pose.orientation.y = d->xquat[(i*3)+1];
+              box.pose.orientation.z = d->xquat[(i*3)+2];
+              box.pose.orientation.w = d->xquat[(i*3)+3];
+
+              cout<<box.pose.position.x<<":"<< box.pose.position.y<<endl;
+              cout<<d->xpos[3]<<":"<<d->xpos[4]<<endl;
+            }
+
             js_publisher.publish(js_msg);
+            box_publisher.publish(box);
 
             ros::spinOnce();
             ros::Duration(0.01).sleep();

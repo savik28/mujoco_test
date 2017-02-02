@@ -713,7 +713,7 @@ xmlns:xacro="http://ros.org/wiki/xacro">
   <joint name="world_joint" type="fixed">
     <parent link="world"/>
     <child link="base_link"/>
-    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.01"/>
+    <origin rpy="0.0 0.0 3.14" xyz="0.0 0.0 0.0"/>
   </joint>
 </robot>
 

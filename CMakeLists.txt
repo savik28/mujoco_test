@@ -135,6 +135,7 @@ include_directories(
 #add_executable(basic src/basic.cpp)
 add_executable(demo src/demo.cpp)
 add_executable(kdl_test src/kdl_test.cpp)
+add_executable(marker_test src/marker_test.cpp)
 add_executable(test_init src/test_init.cpp)
 
 
@@ -146,6 +147,7 @@ add_dependencies(demo mujoco_test_generate_msgs_cpp)
 #target_link_libraries(basic ${catkin_LIBRARIES})
 target_link_libraries(demo ${catkin_LIBRARIES})
 target_link_libraries(kdl_test ${catkin_LIBRARIES})
+target_link_libraries(marker_test ${catkin_LIBRARIES})
 target_link_libraries(test_init ${catkin_LIBRARIES})
 
 #############

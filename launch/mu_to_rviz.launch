@@ -24,4 +24,6 @@
 <!--launch a node to publish the joint states-->
 <node name="mujoco_ros_demo" pkg="mujoco_test" type="demo" output="screen"/>
 
+<node name="marker_test_demo" pkg="mujoco_test" type="marker_test" output="screen"/>
+
 </launch>

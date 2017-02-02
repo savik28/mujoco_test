@@ -184,6 +184,14 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: visualization_marker
+      Name: Marker
+      Namespaces:
+        free_objects: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -220,10 +228,10 @@ Visualization Manager:
         Z: 0
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.280398
+      Pitch: -0.0346032
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.0704
+      Yaw: 4.57041
     Saved: ~
 Window Geometry:
   Displays:
@@ -241,5 +249,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1200
-  X: 676
+  X: 666
   Y: 14

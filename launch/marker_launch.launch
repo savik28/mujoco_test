@@ -1,0 +1,11 @@
+<launch>
+
+<arg name="gui" default="false" />
+
+<param name="robot_description" textfile="$(find mujoco_test)/urdf/ur5_with_gripper.urdf"/>
+
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(find mujoco_test)/scene.rviz" required="true" />
+
+<node name="marker_test_demo" pkg="mujoco_test" type="marker_test" output="screen"/>
+
+</launch>
