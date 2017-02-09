@@ -1,7 +1,7 @@
 <launch>
 
 <arg name="model" />
-<arg name="gui" default="false" />
+<arg name="gui" default="true" />
 
 <!-- Parsing xacro and setting robot_description parameter -->
 <param name="robot_description" textfile="$(find mujoco_test)/urdf/ur5_with_gripper.urdf"/>
@@ -23,7 +23,5 @@
 
 <!--launch a node to publish the joint states-->
 <node name="mujoco_ros_demo" pkg="mujoco_test" type="demo" output="screen"/>
-
-<node name="marker_test_demo" pkg="mujoco_test" type="marker_test" output="screen"/>
 
 </launch>

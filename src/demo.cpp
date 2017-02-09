@@ -136,10 +136,10 @@ int main(int argc, char **argv)
       box.scale.y = m->geom_size[(i*3)+1]*2;//0.1;
       box.scale.z = m->geom_size[(i*3)+2]*2;//0.4;
 
-      box.color.r = m->geom_rgba[(i*3)+0];
-      box.color.g = m->geom_rgba[(i*3)+1];
-      box.color.b = m->geom_rgba[(i*3)+2];
-      box.color.a = m->geom_rgba[(i*3)+3]; // Don't forget to set the alpha!
+      box.color.r = m->geom_rgba[(i*4)+0];
+      box.color.g = m->geom_rgba[(i*4)+1];
+      box.color.b = m->geom_rgba[(i*4)+2];
+      box.color.a = m->geom_rgba[(i*4)+3]; // Don't forget to set the alpha!
     }
 
     ros::Duration(0.1).sleep();
@@ -189,8 +189,8 @@ int main(int argc, char **argv)
               box.pose.orientation.z = d->xquat[(i*3)+2];
               box.pose.orientation.w = d->xquat[(i*3)+3];
 
-              cout<<box.pose.position.x<<":"<< box.pose.position.y<<endl;
-              cout<<d->xpos[3]<<":"<<d->xpos[4]<<endl;
+              //cout<<box.pose.position.x<<":"<< box.pose.position.y<<endl;
+              //cout<<d->xpos[3]<<":"<<d->xpos[4]<<endl;
             }
 
             js_publisher.publish(js_msg);
