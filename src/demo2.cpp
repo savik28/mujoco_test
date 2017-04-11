@@ -6,6 +6,7 @@
 #include "fstream"
 #include "sensor_msgs/JointState.h"
 #include "visualization_msgs/Marker.h"
+#include "moveit_msgs/ContactInformation.h"
 //#include "geometry_msgs/WrenchStamped.h"
 //#include "tf2_msgs/TFMessage.h"
 //#include "std_msgs/ColorRGBA.h"
@@ -106,8 +107,6 @@ int main(int argc, char **argv)
 
 
     ros::Publisher js_publisher = node_obj.advertise<sensor_msgs::JointState>("/joint_states",1000);
-
-    //setting up header joint state msgs
     sensor_msgs::JointState js_msg;
     js_msg.name.resize(8);
     js_msg.position.resize(8);
@@ -122,12 +121,8 @@ int main(int argc, char **argv)
     js_msg.name[7] = "gripper_base_right_finger_joint";
 
     ros::Publisher box_publisher = node_obj.advertise<visualization_msgs::Marker>("/visualization_marker", 1000);
-
     visualization_msgs::Marker box;
-    //box.markers.resize(objects_in_scene);
-
-    // id: world=0; if there are 2 objects in scene object1_id=1;object2_id=2;then robots's base_link id = 3
-    for(int i=1; i <= objects_in_scene; i++)
+    for(int i=1; i <= objects_in_scene; i++) // id: world=0; if there are 2 objects in scene object1_id=1;object2_id=2;then robots's base_link id = 3
     {
       box.header.frame_id = "/world";
       box.ns = "free_objects";
@@ -145,11 +140,12 @@ int main(int argc, char **argv)
       box.color.a = m->geom_rgba[(i*4)+3]; // Don't forget to set the alpha!
     }
 
+    ros::Publisher contact_info_publisher = node_obj.advertise<moveit_msgs::ContactInformation>("/contact_details",1000);
+    moveit_msgs::ContactInformation contact_info_msg;
+
     ros::Duration(0.1).sleep();
     //ros::Rate loop_rate(10);
-
-
-  // while
+    // while
     if ( ros::ok() )
     {
         while( d->time < 20 )
@@ -161,7 +157,9 @@ int main(int argc, char **argv)
 
             mj_step(m,d); //simulation
 
+            ros::Time now = ros::Time::now();
             steps++;
+
             simulation_data <<endl <<"Step "<<steps <<": "<<endl;
             for(int cf=0; cf< d->ncon; cf++)
             {
@@ -169,9 +167,16 @@ int main(int argc, char **argv)
                 simulation_data <<"Contact "<<cf <<": "<<endl
                                 <<"    Contact between geoms "<<d->contact[cf].geom1<<" & "<<d->contact[cf].geom2<<endl;
                                 //<<"    Force: "<<*con_force<<endl<<endl;
+                contact_info_msg.header.stamp = now;
+                contact_info_msg.depth       = d->contact[cf].dist;
+                contact_info_msg.position.x  = d->contact[cf].pos[0];
+                contact_info_msg.position.y  = d->contact[cf].pos[1];
+                contact_info_msg.position.z  = d->contact[cf].pos[2];
+
+                contact_info_msg.body_type_1 = d->contact[cf].geom1;
+                contact_info_msg.body_type_2 = d->contact[cf].geom2;
             }
 
-            ros::Time now = ros::Time::now();
 
             js_msg.header.stamp = now;
             for(int i=0; i < m->njnt-objects_in_scene; i++)
@@ -199,6 +204,7 @@ int main(int argc, char **argv)
 
             js_publisher.publish(js_msg);
             box_publisher.publish(box);
+            contact_info_publisher.publish(contact_info_msg);
 
             ros::spinOnce();
             ros::Duration(0.01).sleep();

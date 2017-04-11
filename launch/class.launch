@@ -1,0 +1,27 @@
+<launch>
+
+<arg name="model" />
+<arg name="gui" default="true" />
+
+<!-- Parsing xacro and setting robot_description parameter -->
+<param name="robot_description" textfile="$(find mujoco_test)/urdf/ur5_with_gripper.urdf"/>
+
+<!-- Setting gui parameter to true for display joint slider -->
+<!--param name="use_gui" value="$(arg gui)"/-->
+<!--param name="rate" value="100"/-->
+
+<!-- Starting robot state publish which will publish tf -->
+<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+
+<!-- Launch visualization in rviz -->
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(find mujoco_test)/scene.rviz" required="true" />
+
+<!-- Starting joint state publisher-->
+<!--node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <rosparam param="source_list">["demo_publisher/joint_states"]</rosparam>
+</node-->
+
+<!--launch a node to publish the joint states-->
+<node name="joint_state_interpreter" pkg="mujoco_test" type="joint_state_interpreter" output="screen"/>
+
+</launch>

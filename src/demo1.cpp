@@ -225,7 +225,7 @@ int main(int argc, char **argv)
 
     simulation_data.close();
     mj_deleteData(d);
-    mj_deleteModel(m);
+    mj_deleteModel(m);  
     mj_deactivate();
 
     return 0;

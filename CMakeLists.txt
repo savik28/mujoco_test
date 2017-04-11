@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   kdl_parser
   tf urdf xacro rviz geometry_msgs)
 
-MESSAGE( "ALL libs " ${catkin_LIBRARIES})
+#  MESSAGE( "ALL libs " ${catkin_LIBRARIES})
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -107,7 +107,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mujoco_test
 #  CATKIN_DEPENDS roscpp
-#  DEPENDS GL
+#  DEPENDS OPENGL
 )
 
 ###########
@@ -137,6 +137,7 @@ add_executable(demo src/demo.cpp)
 add_executable(kdl_test src/kdl_test.cpp)
 add_executable(marker_test src/marker_test.cpp)
 add_executable(test_init src/test_init.cpp)
+add_executable(joint_state_interpreter src/subscriber_driven.cpp)
 
 
 ## Add cmake target dependencies of the executable
@@ -149,7 +150,7 @@ target_link_libraries(demo ${catkin_LIBRARIES})
 target_link_libraries(kdl_test ${catkin_LIBRARIES})
 target_link_libraries(marker_test ${catkin_LIBRARIES})
 target_link_libraries(test_init ${catkin_LIBRARIES})
-
+target_link_libraries(joint_state_interpreter ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############
