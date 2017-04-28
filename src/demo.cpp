@@ -152,7 +152,7 @@ int main(int argc, char **argv)
   // while
     if ( ros::ok() )
     {
-        while( d->time < 20 )
+        while( d->time < 15 )
         {
             for(int e=0; e< m->njnt-objects_in_scene; e++)
             {

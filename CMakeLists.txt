@@ -137,7 +137,7 @@ add_executable(demo src/demo.cpp)
 add_executable(kdl_test src/kdl_test.cpp)
 add_executable(marker_test src/marker_test.cpp)
 add_executable(test_init src/test_init.cpp)
-add_executable(joint_state_interpreter src/subscriber_driven.cpp)
+add_executable(joint_state_interpreter src/subscriber_driven1.cpp)
 
 
 ## Add cmake target dependencies of the executable

@@ -102,12 +102,15 @@ public:
   {
     if ( ros::ok() )
     {
-        while( d->time < 10 )
+        while( d->time < 20 )
         {
-          cout<< js_in<<endl;
+          //cout<< js_in<<endl;
           for(int e=0; e< m->njnt-objects_in_scene; e++)
           {
             d->ctrl[e] = d->qfrc_bias[e+(objects_in_scene*6)];// 1 free joint adds 6 DOF's
+            //cout<<e<<"----"<<d->ctrl[e]<<endl;
+            //cout<< js_in<<endl;
+            //d->ctrl[e+8] = js_in.position[e];
           }
 
           mj_step(m,d); //simulation
@@ -167,8 +170,8 @@ private:
   sensor_msgs::JointState js_msg,js_in;
   visualization_msgs::Marker box;
   // setting the set points for Joint angles in radians
-  double start_pose[8]    = {0.5,-0.1,0.2,-2.5,-1,0,-0.05,0.05};//{0.1,-1,1,-2.5,-1,0,-0.05,0.05};{0,0,0,0,0,0,0,0}
-  double pos_set_point[8] = {-1,-0.8,0.9,-3.14,-1.57,0.8,-0.025,0.025};//{0.3,-1.45,1.45,-3.14,-1.46,0.9,-0.04,0.04}{-1.57,-1.45,1.45,-3.14,-1.46,0.8,-0.025,0.025};
+  double start_pose[8]    = {0.5,-0.1,0.2,-2.5,-1,0,-0.05,0.05};//{0.1,-1,1,-2.5,-1,0,-0.05,0.05};{0.5,-0.1,0.2,-2.5,-1,0,-0.05,0.05}{0,0,0,0,0,0,0,0}
+  double pos_set_point[8] = {0,0,0,0,0,0,0,0} ;//{0.3,-1.45,1.45,-3.14,-1.46,0.9,-0.04,0.04}{-1.57,-1.45,1.45,-3.14,-1.46,0.8,-0.025,0.025};{-1,-0.8,0.9,-3.14,-1.57,0.8,-0.025,0.025};
   double vel_set_point[8] = {0,0,0,0,0,0,0,0};
 
 
@@ -203,7 +206,5 @@ int main(int argc, char **argv)
     ROS_ERROR("%s", e.what());
   }
 
-  my_jsi.~JointStateInterpreter();
-  ros::shutdown();
   return 0;
 }
