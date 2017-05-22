@@ -4,8 +4,7 @@
 #include "mjmodel.h"
 #include "iostream"
 #include "fstream"
-#include "sensor_msgs/JointState.h"
-#include "visualization_msgs/Marker.h"
+#include <mujoco_test/helpers.h>
 
 using namespace std;
 
@@ -15,6 +14,12 @@ public:
   JointStateInterpreter(const ros::NodeHandle& nh): nh_(nh)
   {
     // here is the place to init any variables
+    // TODO: get rid of this
+    for (size_t i=0; i<8; ++i)
+    {
+      start_pose[i] = 0;
+      vel_set_point[i] = 0;
+    }
   }
   ~JointStateInterpreter()
   {
@@ -26,12 +31,19 @@ public:
 
   void start()
   {
-    mj_activate("/home/student/mjpro140/bin/mjkey.txt");
+    std::string license_file, model_file;
+    if (!nh_.getParam("license_file", license_file))
+      throw std::runtime_error("Did not find parameter 'license_file'.");
+    if (!nh_.getParam("model_file", model_file))
+      throw std::runtime_error("Did not find parameter 'model_file'.");
 
-    objects_in_scene = 1;
+    mj_activate(license_file.c_str());
 
-    m = mj_loadXML("/home/student/mjpro140/model/ur5/ur5.xml", NULL, error, 1000);
+    // TODO: get rid of this 1000
+    m = mj_loadXML(model_file.c_str(), NULL, error, 1000);
     cout<<"success"<<endl;
+
+    std::vector<int> body_ids = mujoco_test::get_free_body_ids(m);
 
     if( !m )
        printf("%s\n", error);
@@ -44,150 +56,61 @@ public:
                  <<"Bodys :"<< m->nbody <<endl
                  <<"Joints:"<< m->njnt <<endl
                  <<"Ctrl.IP:"<< m->nu <<endl
-                 <<"No.of Free Objects:"<< objects_in_scene <<endl<<endl;
+                 <<"No.of Free Objects:"<< body_ids.size() <<endl<<endl;
     }
 
     d = mj_makeData(m);
 
-    js_msg.name.resize(8);
-    js_msg.position.resize(8);
-    js_msg.velocity.resize(8);
-    js_msg.name[0] = "shoulder_pan_joint";
-    js_msg.name[1] = "shoulder_lift_joint";
-    js_msg.name[2] = "elbow_joint";
-    js_msg.name[3] = "wrist_1_joint";
-    js_msg.name[4] = "wrist_2_joint";
-    js_msg.name[5] = "wrist_3_joint";
-    js_msg.name[6] = "gripper_base_left_finger_joint";
-    js_msg.name[7] = "gripper_base_right_finger_joint";
-
-    js_old = js_msg;
+    js_msg = mujoco_test::get_joint_state(m,d,ros::Time::now());
     js_new = js_msg;
 
-    for(int i=1; i <= objects_in_scene; i++)
-    {
-      box.header.frame_id = "/world";
-      box.ns = "free_objects";
-      box.type = visualization_msgs::Marker::CUBE;
-      box.action = visualization_msgs::Marker::ADD;
-
-      box.id = i; //geom_id/body_id
-      box.scale.x = m->geom_size[(i*3)+0]*2;//0.1;
-      box.scale.y = m->geom_size[(i*3)+1]*2;//0.1;
-      box.scale.z = m->geom_size[(i*3)+2]*2;//0.4;
-
-      box.color.r = m->geom_rgba[(i*4)+0];
-      box.color.g = m->geom_rgba[(i*4)+1];
-      box.color.b = m->geom_rgba[(i*4)+2];
-      box.color.a = m->geom_rgba[(i*4)+3]; // Don't forget to set the alpha!
-    }
-
-    //start_pose[8]  = {0.5,-0.1,0.2,-2.5,-1,0,-0.05,0.05};   //{0.1,-1,1,-2.5,-1,0,-0.05,0.05};{0,0,0,0,0,0,0,0}
-    //pos_set_point[8] = {-1,-0.8,0.9,-3.14,-1.57,0.8,-0.025,0.025}; //{0.3,-1.45,1.45,-3.14,-1.46,0.9,-0.04,0.04}{-1.57,-1.45,1.45,-3.14,-1.46,0.8,-0.025,0.025};
-    //vel_set_point[8] = {0,0,0,0,0,0,0,0};
-
-    for(int c=0; c < m->njnt-objects_in_scene; c++)
-    {
-        // first 8 in d->ctrl is used as motor actuator (online gravity compensation)
-        //d->ctrl[c+8] = pos_set_point[c];  // next 8 in d->ctrl is used as position actuator
-        d->ctrl[c+16] = vel_set_point[c]; // next 8 in d->ctrl is used as velocity actuator
-        js_old.position[c] = start_pose[c];
-        //d->qpos[c+(objects_in_scene*7)] = start_pose[c];
-    }
+    js_old = mujoco_test::set_joint_pos (m,d,start_pose);
 
     sub_ = nh_.subscribe("joint_states_in", 1, &JointStateInterpreter::js_callback, this);
-    pub_ = nh_.advertise<sensor_msgs::JointState>("joint_states_out", 1);
+    pub_ = nh_.advertise<sensor_msgs::JointState>("joint_states_out", 10);
+
     js_pub = nh_.advertise<sensor_msgs::JointState>("/joint_states",100);
-    box_pub = nh_.advertise<visualization_msgs::Marker>("/visualization_marker", 100);
+    marker_pub = nh_.advertise<visualization_msgs::MarkerArray>("/visualization_marker_array", 100);
+    wrench_pub = nh_.advertise<geometry_msgs::WrenchStamped>("/ee_wrench",100);
   }
 
 private:
   // here is the place to add variables, like mjModel* m and mjData* d;
   ros::NodeHandle nh_;
   ros::Subscriber sub_;
-  ros::Publisher pub_,js_pub,box_pub;
+  ros::Publisher pub_,js_pub,marker_pub,wrench_pub;
   mjModel* m;
   mjData* d;
   char error[1000];
-  int objects_in_scene, callCount=0;
-  //double start_pose[8], pos_set_point[8];
   sensor_msgs::JointState js_msg,js_old,js_new;
-  visualization_msgs::Marker box;
+  visualization_msgs::MarkerArray markers_msg;
+  geometry_msgs::WrenchStamped ee_wrench_msg;
   // setting the set points for Joint angles in radians
-  double start_pose[8]    = {0,0,0,0,0,0,0,0};//{0.1,-1,1,-2.5,-1,0,-0.05,0.05};{0,0,0,0,0,0,0,0}{0.5,-0.1,0.2,-2.5,-1,0,-0.05,0.05}
-  //double pos_set_point[8] = {-1,-0.8,0.9,-3.14,-1.57,0.8,-0.025,0.025};//{0.3,-1.45,1.45,-3.14,-1.46,0.9,-0.04,0.04}{-1.57,-1.45,1.45,-3.14,-1.46,0.8,-0.025,0.025};
-  double vel_set_point[8] = {0,0,0,0,0,0,0,0};
-
+  double start_pose[8];
+  double vel_set_point[8];
 
   void js_callback(const sensor_msgs::JointStateConstPtr& message)
   {
-    // put JointState into Mujoco
-    // set control set points
-    // simulate one step
-    // publish object poses
-    // publish contacts
-    // publish actual joint states from Mujoco
 
     js_new = *message;
-    for(int a=0; a < m->njnt-objects_in_scene; a++)
-    {
-      d->qpos[a+(objects_in_scene*7)] = js_old.position[a];
-      // first 8 in d->ctrl is used as motor actuator (online gravity compensation)
-      d->ctrl[a+8] = js_new.position[a];  // next 8 in d->ctrl is used as position actuator
-    }
 
-    for(int e=0; e< m->njnt-objects_in_scene; e++)
-    {
-      d->ctrl[e] = d->qfrc_bias[e+(objects_in_scene*6)];// 1 free joint adds 6 DOF's
-    }
+    d = mujoco_test::set_control_input (m,d,js_new,js_old,vel_set_point);
 
     mj_step(m,d); //simulation
+
     ros::Time now = ros::Time::now();
-
-    js_msg.header.stamp = now;
-    for(int i=0; i < m->njnt-objects_in_scene; i++)
-    {
-       js_msg.position[i] = d->qpos[i+(objects_in_scene*7)];
-       js_msg.velocity[i] = d->qvel[i+(objects_in_scene*6)];
-    }
-
-    for(int i=1; i <= objects_in_scene; i++)
-    {
-      box.header.stamp = now;
-      box.pose.position.x = d->xpos[(i*3)+0];
-      box.pose.position.y = d->xpos[(i*3)+1];
-      box.pose.position.z = d->xpos[(i*3)+2];
-      box.pose.orientation.x = d->xquat[(i*3)+0];
-      box.pose.orientation.y = d->xquat[(i*3)+1];
-      box.pose.orientation.z = d->xquat[(i*3)+2];
-      box.pose.orientation.w = d->xquat[(i*3)+3];
-
-      //cout<<box[i].pose.position.x<<":"<< box[i].pose.position.y<<endl;
-      //cout<<d->xpos[3]<<":"<<d->xpos[4]<<endl;
-    }
+    js_msg = mujoco_test::get_joint_state(m, d, now);
+    markers_msg.markers = mujoco_test::get_free_body_markers(m, d, now);
+    ee_wrench_msg = mujoco_test::get_ee_wrench(m, d, now);
 
     js_pub.publish(js_msg);
-    box_pub.publish(box);
+    marker_pub.publish(markers_msg);
+    wrench_pub.publish(ee_wrench_msg);
     pub_.publish(*message);
-    //ros::spinOnce();
-    //ros::Duration(0.01).sleep();
 
-    //ROS_INFO("All Messages are Published");
-
-
-    /*for (int z=0; z < m->njnt-objects_in_scene; z++)
-    {
-      cout << endl<<"Joint-"<< z << endl
-           <<"Goal::Cu.State::Error => ";
-      cout << d->ctrl[z+8] <<"::"
-           << d->qpos[z+(objects_in_scene*7)] <<"::" // 1 free joint adds 7 nq's
-           << (d->ctrl[z+8] - d->qpos[z+(objects_in_scene*7)])<< endl;
-    }*/
     js_old = js_new;
-    callCount++;
-    cout<<"TIME:"<<d->time<<"::::::"<<"CALL:"<<callCount<<endl;
-    ROS_INFO("Simulation done");
   }
+
 };
 
 int main(int argc, char **argv)

@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/Marker.h>
 
 int main(int argc, char **argv)
 {
@@ -7,52 +7,44 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "marker_test");
   ros::NodeHandle n;
   ros::Rate r(1);
-  ros::Publisher marker_pub = n.advertise<visualization_msgs::MarkerArray>("visualization_marker", 100);
-  int counter = 0;
+  ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 100);
 
-  visualization_msgs::MarkerArray mark;
-  mark.markers.resize(2);
-
-  for(int i=1; i<=2; i++)
+  while (ros::ok())
   {
-    mark.markers[i].header.frame_id = "world";
-    mark.markers[i].header.stamp = ros::Time();
-    mark.markers[i].ns = "free_objects";
-    mark.markers[i].id = i;
+      visualization_msgs::Marker mark;
 
-    mark.markers[i].type = visualization_msgs::Marker::CUBE;
-    mark.markers[i].action = visualization_msgs::Marker::ADD;
+      mark.header.frame_id = "world";
+      mark.header.stamp = ros::Time();
+      mark.ns = "free_objects";
+      mark.id = 1;
 
-    mark.markers[i].scale.x = 0.1;
-    mark.markers[i].scale.y = 0.1;
-    mark.markers[i].scale.z = 0.4;
+      mark.type = visualization_msgs::Marker::CYLINDER;
+      mark.action = visualization_msgs::Marker::ADD;
 
-    mark.markers[i].color.a = 1.0; // Don't forget to set the alpha!
-    mark.markers[i].color.r = 0.0;
-    mark.markers[i].color.g = 0.9;
-    mark.markers[i].color.b = 0.0;
+      mark.scale.x = 0.1;
+      mark.scale.y = 0.15;
+      mark.scale.z = 0.4;
+
+      mark.color.a = 1.0; // Don't forget to set the alpha!
+      mark.color.r = 0.0;
+      mark.color.g = 0.9;
+      mark.color.b = 0.0;
+
+
+         mark.pose.position.x = -0.5;
+         mark.pose.position.y = 0.15;
+         mark.pose.position.z = 0.2;
+
+         mark.pose.orientation.x = 0.0;
+         mark.pose.orientation.y = 0.0;
+         mark.pose.orientation.z = 0.0;
+         mark.pose.orientation.w = 1.0;
+
+       //only if using a MESH_RESOURCE marker type:
+       //marker.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
+       //mark.markers.push_back(mark);
+       marker_pub.publish(mark);
+       r.sleep();
   }
 
-  while(ros::ok())
-  {
-    for(int i=1; i<=2; i++)
-    {
-       mark.markers[i].pose.position.x = -0.5+(i*0.1)+counter*0.01;
-       mark.markers[i].pose.position.y = 0.15+counter*0.01;
-       mark.markers[i].pose.position.z = 0.2;
-
-       mark.markers[i].pose.orientation.x = 0.0;
-       mark.markers[i].pose.orientation.y = 0.0;
-       mark.markers[i].pose.orientation.z = 0.0;
-       mark.markers[i].pose.orientation.w = 1.0;
-    }
-
-     //only if using a MESH_RESOURCE marker type:
-     //marker.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
-     //mark.markers.push_back(mark);
-     marker_pub.publish(mark);
-     ros::spinOnce();
-     r.sleep();
-     counter++;
-  }
 }

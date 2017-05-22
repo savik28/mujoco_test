@@ -1,0 +1,11 @@
+<mujoco>
+	<body 	name="sensor_body" pos="0 0 0">
+		<geom 	type="cylinder"  	
+			size="0.025 0.0135"
+			rgba="0.1 0.9 0.1 1"
+			mass="0.215" 
+			user="1" contype="1" conaffinity="1"/>
+		<site   name="sensor_site" type="cylinder" size="0.025 0.0135" pos="0 0 0"/> 
+	</body> 
+	
+</mujoco>

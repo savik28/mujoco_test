@@ -1,0 +1,171 @@
+<!-- ======================================================
+	
+	Model 		: UR5 Arm	
+	Author		: Karthikeyan Jaganathan
+	Institute       : Institute for Artificial Intelligence, University of Bremen.
+	Contacts 	: ka_ja@uni-bremen.de	
+	Last edits 	: 03.12.2016,20.12.2016,25.01.2017,17.02.2017
+
+====================================================== -->
+
+<mujoco model="UR5">
+
+  <compiler coordinate="local" 
+	    meshdir="meshes"
+	    inertiafromgeom="false"	    
+	    balanceinertia="true" 
+	    boundinertia="0.00001" 
+	    boundmass="0.001"
+	    angle="radian"
+	    eulerseq ="xyz"/>
+
+  <option   timestep="0.01" solver='PGS' iterations='1000' gravity="0 0 -9.8" viscosity="0"/>
+
+  <default>
+    <!--joint damping="1" limited="true"/-->
+    <default class="0">
+	<mesh scale = "1 1 1"/>
+    </default>
+    <default class="1">
+	<mesh scale = "0.001 0.001 0.001"/>
+    </default>
+  </default>
+  
+  <asset>
+	<mesh file="base.stl"/>
+	<mesh file="shoulder.stl"/>
+	<mesh file="upper_arm.stl"/>
+	<mesh file="forearm.stl"/>
+	<mesh file="wrist_1.stl"/>
+	<mesh file="wrist_2.stl"/>
+	<mesh file="wrist_3.stl"/>
+	<mesh class="0" file="WSG50_110.stl"/>
+	<mesh class="1" file="GUIDE_WSG50_110.stl"/>
+	<mesh class="1" file="WSG-FMF.stl"/>
+	<material name="GndMat" specular=".3" shininess=".3" reflectance="0.3" rgba="0.5 0.5 0.8  1"/>
+	<material name="RobMat" specular=".3" shininess=".5" reflectance="0.5" rgba="0.7 0.7 0.7  1"/>
+	<material name="GriMat" specular=".3" shininess=".5" reflectance="0.5" rgba="0.8 0.4 0.4  1"/>
+	<material name="FinMat" specular=".3" shininess=".5" reflectance="0.5" rgba="0.1 0.1 0.1  1"/>
+  </asset>
+  
+  
+  <worldbody>
+	<light directional="true" cutoff="4" exponent="20" diffuse="1 1 1" specular="0 0 0" pos=".5 0.75 1.5" dir="-.5 -0.75 -1.5"/>
+	<geom name="gnd" material="GndMat" type="plane" contype="1" conaffinity="1" pos="0 0 0" size="1.5 0.75 0.001" />
+
+	<body name="box1" pos="-0.5 0.15 0.2" euler="0 0 0">
+		<inertial pos="0 0 0" euler="0 0 0" mass="0.25" />
+		<geom name="box1_g" type="box" size="0.05 0.05 0.2" rgba="0 0.9 0 1" />
+		<joint name="box1_free_joint" pos="0 0 0" type="free" limited="false" damping="0"/>
+	</body>	
+        <body name="cyl1" pos="-0.7 0.2 0.2" euler="0 0 0">
+                <inertial pos="0 0 0" euler="0 0 0" mass="0.20" />
+                <geom name="cyl_g" type="cylinder" size="0.05 0.15" rgba="0.9 0 0 1" />
+                <joint name="cyl1_free_joint" pos="0 0 0" type="free" limited="false" damping="0"/>
+        </body>
+
+      	<body name="base_link" euler="0 0 3.14" pos="0 0 0">
+	      	<inertial pos="0 0 0" euler="0 0 0" mass="4.0" 
+			  diaginertia="0.00443333156 0.00443333156 0.0072" />
+	      	<geom name="base_g" material="RobMat"  type="mesh" mesh="base"/>
+	
+	<body name="shoulder_link" euler="0 0 0" pos="0 0 0.089159">
+	      	<inertial pos="0 0 0" euler="0 0 0" mass="3.7" 
+			  diaginertia="0.010267495893 0.010267495893 0.0072" />
+	      	<geom name="shoulder_g" material="RobMat"  type="mesh" mesh="shoulder"/>
+		<joint  name="shoulder_pan_joint" type="hinge" axis="0 0 1" limited="true" frictional="true"
+			range="-3.14159265 3.14159265" 			
+			damping="10.0" frictionloss="0"/>
+	
+	<body name="upper_arm_link" euler="0 1.570796325 0" pos="0 0.13585 0">
+	      	<inertial euler="0 0 0"  pos="0 0 0.28" mass="8.393"
+			  diaginertia="0.22689067591 0.22689067591 0.0151074" />
+	      	<geom name="upper_arm_g" material="RobMat"  type="mesh" mesh="upper_arm"/>
+		<joint  name="shoulder_lift_joint" type="hinge" axis="0 1 0" limited="true" frictional="true"
+			range="-3.14159265 3.14159265" 			
+			damping="10.0" frictionloss="0"/>
+	
+	<body name="forearm_link" euler="0 0 0" pos="0 -0.1197 0.425">
+	      	<inertial euler="0 0 0"  pos="0 0 0.25" mass="2.275"
+			  diaginertia="0.049443313556 0.049443313556 0.004095" />
+	      	<geom name="forearm_g" material="RobMat"  type="mesh" mesh="forearm"/>
+		<joint  name="elbow_joint" type="hinge" axis="0 1 0" limited="true" frictional="true"
+			range="-3.14159265 3.14159265" 			
+			damping="10.0" frictionloss="0"/>
+
+	<body name="wrist_1_link" euler="0 1.570796325 0" pos="0 0 0.39225">
+	      	<inertial euler="0 0 0"  pos="0 0 0" mass="1.219"
+			  diaginertia="0.111172755531 0.111172755531 0.21942" />
+	      	<geom name="wrist1_g" material="RobMat"  type="mesh" mesh="wrist_1"/>
+		<joint  name="wrist_1_joint" type="hinge" axis="0 1 0" limited="true" frictional="true"
+			range="-3.14159265 3.14159265" 			
+			damping="10.0" frictionloss="0"/>
+
+	<body name="wrist_2_link" euler="0 0 0" pos="0 0.093 0">
+	      	<inertial euler="0 0 0"  pos="0 0 0" mass="1.219"
+			  diaginertia="0.111172755531 0.111172755531 0.21942" />
+	      	<geom name="wrist2_g" material="RobMat"  type="mesh" mesh="wrist_2"/>
+		<joint  name="wrist_2_joint" type="hinge" axis="0 0 1" limited="true" frictional="true"
+			range="-3.14159265 3.14159265" 			
+			damping="10.0" frictionloss="0"/>
+
+	<body name="wrist_3_link" euler="0 0 0" pos="0 0 0.09465">
+	      	<inertial euler="0 0 0"  pos="0 0 0" mass="0.1879"
+			  diaginertia="0.0171364731454 0.0171364731454 0.033822" />
+	      	<geom name="wrist3_g" material="RobMat"  type="mesh" mesh="wrist_3"/>
+		<joint  name="wrist_3_joint" type="hinge" axis="0 1 0" limited="true" frictional="true"
+			range="-3.14159265 3.14159265" 			
+			damping="10.0" frictionloss="0"/>
+	
+	<body name="ee_link" euler="-1.570796325 0 0" pos="0 0.0823 0">
+      		<geom name="ee_link_g" material="RobMat" rgba="0.1 0.1 0.9 1" type="box" size="0.01 0.01 0.01"/>	
+
+	
+	<!--include file = "kms_40.xml"/-->
+	<include file = "gripper.xml"/>
+
+	</body>
+	</body>
+	</body>
+	</body>
+	</body>
+	</body>
+	</body>
+	</body>
+  </worldbody>
+  <sensor>
+        <force name="force_sensor" site="sensor_site" noise="0"/>
+        <torque name="torque_sensor" site="sensor_site" noise="0"/>
+  </sensor>
+  <actuator>
+	<!--general name="shoulder_lift" joint="shoulder_lift_joint" dyntype="none" gaintype="user" gainprm="1 .05"/-->
+	<motor name="shoulder_pan_torque" joint="shoulder_pan_joint" gear="1"/>
+	<motor name="shoulder_lift_torque" joint="shoulder_lift_joint" gear="1"/>
+	<motor name="elbow_torque" joint="elbow_joint" gear="1"/>
+	<motor name="wrist_1_torque" joint="wrist_1_joint" gear="1"/>
+	<motor name="wrist_2_torque" joint="wrist_2_joint" gear="1"/>
+	<motor name="wrist_3_torque" joint="wrist_3_joint" gear="1"/>
+	<motor name="left_finger_torque" joint="gripper_base_left_finger_joint" gear="1"/>
+	<motor name="right_finger_torque" joint="gripper_base_right_finger_joint" gear="1"/>
+
+	<position name="shoulder_pan_act" joint="shoulder_pan_joint" kp="10" ctrlrange="-3.14159265 3.14159265"/>
+	<position name="shoulder_lift_act" joint="shoulder_lift_joint" kp="100" ctrlrange="-3.14159265 3.14159265"/>
+	<position name="elbow_act" joint="elbow_joint" kp="100" ctrlrange="-3.14159265 3.14159265"/>
+	<position name="wrist_1_act" joint="wrist_1_joint" kp="100" ctrlrange="-3.14159265 3.14159265"/>
+	<position name="wrist_2_act" joint="wrist_2_joint" kp="10" ctrlrange="-3.14159265 3.14159265"/>
+	<position name="wrist_3_act" joint="wrist_3_joint" kp="10" ctrlrange="-3.14159265 3.14159265"/>
+	<position name="left_finger_act" joint="gripper_base_left_finger_joint" kp="10" ctrlrange="-0.055 -0.0027"/>
+	<position name="right_finger_act" joint="gripper_base_right_finger_joint" kp="10" ctrlrange="0.0027 0.055"/>
+
+	<velocity name="shoulder_pan_velocity" joint="shoulder_pan_joint" kv="10"/>
+	<velocity name="shoulder_lift_velocity" joint="shoulder_lift_joint" kv="10"/>
+	<velocity name="elbow_velocity" joint="elbow_joint" kv="10"/>
+	<velocity name="wrist_1_velocity" joint="wrist_1_joint" kv="10"/>
+	<velocity name="wrist_2_velocity" joint="wrist_2_joint" kv="10"/>
+	<velocity name="wrist_3_velocity" joint="wrist_3_joint" kv="10"/>
+	<velocity name="left_finger_velocity" joint="gripper_base_left_finger_joint" kv="10"/>
+	<velocity name="right_finger_velocity" joint="gripper_base_right_finger_joint" kv="10"/>
+
+  </actuator>
+</mujoco>
+

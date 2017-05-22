@@ -1,0 +1,2 @@
+#!/bin/bash
+rosbag play --loop bags/js1.bag /joint_states:=/joint_state_interpreter/joint_states_in

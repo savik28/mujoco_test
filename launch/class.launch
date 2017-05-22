@@ -4,7 +4,7 @@
 <arg name="gui" default="true" />
 
 <!-- Parsing xacro and setting robot_description parameter -->
-<param name="robot_description" textfile="$(find mujoco_test)/urdf/ur5_with_gripper.urdf"/>
+<param name="robot_description" textfile="$(find mujoco_test)/models/ur5_with_gripper.urdf"/>
 
 <!-- Setting gui parameter to true for display joint slider -->
 <!--param name="use_gui" value="$(arg gui)"/-->
@@ -21,7 +21,11 @@
     <rosparam param="source_list">["demo_publisher/joint_states"]</rosparam>
 </node-->
 
-<!--launch a node to publish the joint states-->
-<node name="joint_state_interpreter" pkg="mujoco_test" type="joint_state_interpreter" output="screen"/>
+<!--launch a node to publish the joint state   "/home/student/mjpro140/bin/mjkey.txt"   "/home/student/mjpro140/model/ur5/ur5.xml" -->
+<node name="joint_state_interpreter" pkg="mujoco_test" type="joint_state_interpreter" output="screen">
+  <param name="license_file" value="$(find iai_mujoco)/license/mjkey.txt" />
+  <param name="model_file" value="$(find mujoco_test)/models/ur5.xml" />
+</node>
+
 
 </launch>
